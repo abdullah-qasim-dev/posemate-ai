@@ -2,6 +2,7 @@ import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'screens/pose_library_screen.dart';
 
 void main() {
   runApp(const PoseMateApp());
@@ -527,76 +528,6 @@ class _StepCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Simple placeholder screen for Pose Library.
-class PoseLibraryScreen extends StatelessWidget {
-  const PoseLibraryScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF090D18),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF090D18),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFFE6ECFF), size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Pose Library',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFFE6ECFF),
-          ),
-        ),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7C5CF0).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.grid_view_rounded,
-                  size: 34,
-                  color: Color(0xFF7C5CF0),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Pose Library',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFE6ECFF),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Curated reference poses will be available here.\nYou will be able to select upper-body or full-body poses to guide your camera shots.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: Color(0xFFA7B1CE),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
