@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:posemate_repo/main.dart';
+import 'package:posemate_repo/models/pose.dart';
 import 'package:posemate_repo/screens/camera_screen.dart';
 import 'package:posemate_repo/screens/capture_preview_screen.dart';
 import 'package:posemate_repo/screens/pose_library_screen.dart';
@@ -159,4 +160,21 @@ void main() {
     expect(find.byType(CameraScreen), findsOneWidget);
     expect(find.text('T-Pose'), findsWidgets);
   });
+
+  testWidgets('CameraScreen with selected reference pose renders correctly and gracefully handles camera availability',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CameraScreen(selectedPose: Pose.defaultPoses.first),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Scaffold and AppBar always render with reference pose title
+    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.text('T-Pose'), findsWidgets);
+    expect(find.text('Reference Pose Selected'), findsOneWidget);
+  });
 }
+

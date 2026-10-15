@@ -2,7 +2,9 @@ import 'dart:io' show File;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'screens/capture_preview_screen.dart';
 import 'screens/pose_library_screen.dart';
+import 'services/photo_service.dart';
 
 void main() {
   runApp(const PoseMateApp());
@@ -533,9 +535,48 @@ class _StepCard extends StatelessWidget {
   }
 }
 
-/// Simple placeholder screen for Saved Photos.
-class SavedPhotosScreen extends StatelessWidget {
+/// Screen displaying captured PoseMate AI photos with interactive preview and deletion.
+class SavedPhotosScreen extends StatefulWidget {
   const SavedPhotosScreen({super.key});
+
+  @override
+  State<SavedPhotosScreen> createState() => _SavedPhotosScreenState();
+}
+
+class _SavedPhotosScreenState extends State<SavedPhotosScreen> {
+  List<File> _photos = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPhotos();
+  }
+
+  Future<void> _loadPhotos() async {
+    try {
+      final photos = await PhotoService.getSavedPhotos();
+      if (mounted) {
+        setState(() {
+          _photos = photos;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _viewPhoto(File photo) async {
+    final deleted = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => CapturePreviewScreen(
+          imagePath: photo.path,
+          isReviewOnly: true,
+        ),
+      ),
+    );
+
+    if (deleted == true && mounted) {
+      _loadPhotos();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -557,48 +598,86 @@ class SavedPhotosScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7C5CF0).withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.collections_outlined,
-                  size: 34,
-                  color: Color(0xFF7C5CF0),
-                ),
+      body: _photos.isEmpty
+          ? _buildEmptyState()
+          : _buildPhotosGrid(),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: const Color(0xFF7C5CF0).withValues(alpha: 0.15),
+                shape: BoxShape.circle,
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'Saved Photos',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFFE6ECFF),
-                ),
+              child: const Icon(
+                Icons.collections_outlined,
+                size: 34,
+                color: Color(0xFF7C5CF0),
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'No saved photos yet.\nPhotos captured with auto-capture will appear here.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: Color(0xFFA7B1CE),
-                ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Saved Photos',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFE6ECFF),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No saved photos yet.\nPhotos captured in camera mode will appear here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: Color(0xFFA7B1CE),
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPhotosGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: _photos.length,
+      itemBuilder: (context, index) {
+        final photo = _photos[index];
+        return GestureDetector(
+          onTap: () => _viewPhoto(photo),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              color: const Color(0xFF0F1626),
+              child: Image.file(
+                photo,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image_rounded,
+                  color: Colors.white24,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
