@@ -9,10 +9,12 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart'
     as ml_kit;
 
 import '../models/pose.dart';
+import '../models/pose_match_result.dart';
 import '../painters/reference_pose_painter.dart';
 import '../painters/skeleton_painter.dart';
 import '../services/camera_image_converter.dart';
 import '../services/photo_service.dart';
+import '../services/pose_comparison_service.dart';
 import 'capture_preview_screen.dart';
 
 /// Display mode for the Reference Pose Ghost Overlay.
@@ -319,6 +321,15 @@ class _CameraScreenState extends State<CameraScreen>
       // Run Google ML Kit Pose Detection inference
       final poses = await _poseDetector.processImage(inputImage);
 
+      // Compute live joint-angle match score against active reference pose
+      final matchResult = (_currentPose != null && poses.isNotEmpty)
+          ? PoseComparisonService.compare(
+              userPose: poses.first,
+              referencePose: _currentPose,
+              isFrontCamera: _isFrontCamera,
+            )
+          : null;
+
       if (mounted && _isStreaming) {
         _poseResultNotifier.value = PoseDetectionResult(
           poses: poses,
@@ -329,6 +340,7 @@ class _CameraScreenState extends State<CameraScreen>
           rotation: inputImage.metadata?.rotation ??
               ml_kit.InputImageRotation.rotation0deg,
           isFrontCamera: _isFrontCamera,
+          matchResult: matchResult,
         );
       }
     } catch (e) {
@@ -1204,13 +1216,77 @@ class _CameraScreenState extends State<CameraScreen>
       builder: (context, result, child) {
         final bool hasPerson = result?.hasPerson ?? false;
 
+        Widget indicator;
+        if (!hasPerson) {
+          indicator = _buildNoPersonDetectedBanner();
+        } else if (_currentPose != null && result?.matchResult != null) {
+          indicator = _buildPoseMatchPill(result!.matchResult!);
+        } else {
+          indicator = _buildPersonDetectedPill(result!.detectedLandmarkCount);
+        }
+
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
-          child: hasPerson
-              ? _buildPersonDetectedPill(result!.detectedLandmarkCount)
-              : _buildNoPersonDetectedBanner(),
+          child: indicator,
         );
       },
+    );
+  }
+
+  /// Compact badge displaying the real-time pose match score and joint alignment count.
+  Widget _buildPoseMatchPill(PoseMatchResult match) {
+    final int score = match.matchScore.round();
+    final bool isMatched = match.isMatch;
+
+    final Color badgeColor = isMatched
+        ? const Color(0xFF10B981) // Emerald green when matched (>= 75%)
+        : (score >= 45
+            ? const Color(0xFF7C5CF0) // Purple during good alignment
+            : const Color(0xFFF59E0B)); // Amber when aligning
+
+    return Center(
+      key: const ValueKey('pose_match_pill'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F1626).withValues(alpha: 0.90),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: badgeColor.withValues(alpha: 0.7),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: badgeColor.withValues(alpha: 0.25),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: badgeColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Match: $score% (${match.matchedJointCount}/${match.totalReferenceJoints} joints)',
+              style: const TextStyle(
+                color: Color(0xFFE6ECFF),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

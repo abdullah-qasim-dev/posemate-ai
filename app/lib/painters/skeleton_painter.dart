@@ -3,18 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart'
     as ml_kit;
 
+import '../models/pose_match_result.dart';
+
 /// Holds the output of a single pose detection frame for drawing and UI updates.
 class PoseDetectionResult {
   final List<ml_kit.Pose> poses;
   final Size absoluteImageSize;
   final ml_kit.InputImageRotation rotation;
   final bool isFrontCamera;
+  final PoseMatchResult? matchResult;
 
   const PoseDetectionResult({
     required this.poses,
     required this.absoluteImageSize,
     required this.rotation,
     required this.isFrontCamera,
+    this.matchResult,
   });
 
   /// Returns true if at least one person with valid landmarks was detected.
